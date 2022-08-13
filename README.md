@@ -1,2 +1,2 @@
 # ecchi-tsuntsun
-Bot for my social media Ecchi-Accounts
+Social media Bot, which is controlled via a Discord server.
