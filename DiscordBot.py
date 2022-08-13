@@ -152,6 +152,7 @@ class Bot(discord.Client):
                         "[$u]\t             = Update your Youtube playlist \n" \
                         "[$s]\t             = Get how many prepared Tweets remaining \n" \
                         "[$r]\t             = Reboot \n" \
+                        "[$f]\t             = Get the next user to follow \n" \
                         "[$inject(...)]\t   = Edit autostart scripts \n" \
                         "[$g(x)]\t          = Get description of local Tweet x \n" \
                         "[$d(x)]\t          = Delete local Tweet x"
