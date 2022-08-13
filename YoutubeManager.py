@@ -1,12 +1,14 @@
 from googleapiclient.discovery import build
+from JSONLoader import getJSONFile
 
 
 def update():
     processed  = 0
-    youtube    = build("youtube", "v3", developerKey=os.getenv("API_KEY"))
-    me         = youtube.channels().list(id=os.getenv("CHANNEL_ID"), part="contentDetails").execute()
+    client     = getJSONFile("Client.json")
+    youtube    = build("youtube", "v3", developerKey=client["api_key"])
+    me         = youtube.channels().list(id=client["channel_ID"], part="contentDetails").execute()
 
-    video_list     = youtube.playlistItems().list(playlistId=os.getenv("PLAYLIST_ID"), part="snippet", maxResults=50).execute()
+    video_list     = youtube.playlistItems().list(playlistId=client["playlist_ID"], part="snippet", maxResults=50).execute()
 
     with open("YoutubePlaylist.txt", "w") as file:
         while 1:
@@ -21,7 +23,7 @@ def update():
             
             try:
                 nextPage = video_list["nextPageToken"]
-                video_list = youtube.playlistItems().list(playlistId=os.getenv("PLAYLIST_ID"), part="snippet",pageToken=nextPage, maxResults=50).execute()
+                video_list = youtube.playlistItems().list(playlistId=client["playlist_ID"], part="snippet",pageToken=nextPage, maxResults=50).execute()
             
             except:
                 break
@@ -33,9 +35,9 @@ def check():
     missing_local  = 0
     missing_online = 0
 
-    youtube    = build("youtube", "v3", developerKey=os.getenv("API_KEY"))
-    me         = youtube.channels().list(id=os.getenv("CHANNEL_ID"), part="contentDetails").execute()
-    video_list     = youtube.playlistItems().list(playlistId=os.getenv("PLAYLIST_ID"), part="snippet", maxResults=50).execute()
+    youtube    = build("youtube", "v3", developerKey=client["api_key"])
+    me         = youtube.channels().list(id=client["channel_ID"], part="contentDetails").execute()
+    video_list = youtube.playlistItems().list(playlistId=client["playlist_ID"], part="snippet", maxResults=50).execute()
 
     file_content   = load_file("YoutubePlaylist.txt")
     online_content = load_videos(video_list["items"])
@@ -58,7 +60,7 @@ def check():
             else:     
                 try: 
                     nextPage       = video_list["nextPageToken"]
-                    video_list = youtube.playlistItems().list(playlistId=client["playlist_ID"], part="snippet", maxResults=50).execute()
+                    video_list     = youtube.playlistItems().list(playlistId=client["playlist_ID"], part="snippet",pageToken=nextPage, maxResults=50).execute()
                     online_content = load_videos(video_list["items"])
                 
                 except:

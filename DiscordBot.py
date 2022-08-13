@@ -20,20 +20,26 @@ class Bot(discord.Client):
         print(f'{self.user} has connected to Discord!')
 
     async def on_message(self, message):
+        print(message.reference.jump_url)
         if message.author == self.user:
             return
 
-        # Get image
+        # Get attachment
         elif message.attachments:
-            try:    # Download image from message url
-                url = str(message.attachments).split('=')[3].split('>')[0].replace('\'', '')
-                dataFormat = url.split('.')[len(url.split('.')) - 1]
-                os.system("rm Img*")
-                os.system("wget {} -O Img.{}".format(url, ["png", "jpg"][dataFormat == "jpg"]))
-                self.gotImage = True
-                await message.channel.send("Got the image!")
+            try:    # Download attachment from message url
+                url = str(message.attachments).split('=')[3].split('\'')[1]
+                dataFormat = url.split('.')[-1]
+                if dataFormat in ["png", "jpg"]:
+                    os.system("rm Img*")
+                    os.system("wget {} -O Img.{}".format(url, dataFormat))
+                    self.gotImage = True
+                elif dataFormat == "py":
+                    file = url.split("/")[-1]
+                    os.system("rm {}".format(file))
+                    os.system("wget {}".format(url))
+                await message.channel.send("Got the file!")
             except:
-                await message.channel.send("Did not get the image!")
+                await message.channel.send("Did not get the file!")
 
         # Get source
         elif message.content.startswith("http"):
@@ -75,10 +81,17 @@ class Bot(discord.Client):
             update()
             await message.channel.send("Updated your Youtube-Playlist!")
 
-        # Check how many Tweets are remaining
+        # Check how many Tweets are remaining and what scripts are available
         elif message.content.startswith("$s"):
             tweets = len(os.listdir("Source"))
             await message.channel.send("There are {} Tweets remaining!".format(str(tweets)))
+
+            files = os.listdir(".")
+            scripts = [x for x in files if ".py" in x]
+            if scripts:
+                await message.channel.send("Scripts available: " + " , ".join(scripts))
+            else:
+                await message.channel.send("There are no scripts available!")
 
         # Get description of a Tweet
         elif message.content.startswith("$g"):
@@ -107,16 +120,41 @@ class Bot(discord.Client):
             except:
                 await message.channel.send("Local Tweet number {} was not found!".format(deleteNum))
 
+        # Edit autostart scripts
+        elif message.content.startswith("$inject"):
+            scripts = str(message.content).split(" ")[1:]
+            os.system("cp .bashrc newbash")
+            with open("newbash", 'a') as file:
+                file.write("\n")
+                for script in scripts:
+                    file.write("nohup python3 {}.py & \n".format(script))
+            os.system("cp newbash ~/.bashrc")
+            await message.channel.send("Autostart scripts changed!")
+
+        # Reboot to take changes into effect
+        elif message.content.startswith("$r"):
+            await message.channel.send("See you soon...hopefully!!")
+            os.system("sudo reboot")
+
+        # Get the next Follower
+        elif message.content.startswith("$f"):
+            with open("Follower.txt", 'r') as file:
+                fol = file.readline()
+                await message.channel.send("The next follower is {}".format(fol))
+
         # Get help response
         elif message.content.startswith("$h"):
-            helpText =  "[Post image]\t = Prepare an image for a Tweet \n" \
-                        "[Post Link]\t  = Prepare source link for a Tweet \n" \
-                        "[€...]\t       = Prepare text for a Tweet \n" \
-                        "[$c]\t         = Check your Youtube playlist \n" \
-                        "[$u]\t         = Update your Youtube playlist \n" \
-                        "[$s]\t         = Get how many prepared Tweets remaining \n" \
-                        "[$g(x)]\t      = Get description of local Tweet x \n" \
-                        "[$d(x)]\t      = Delete local Tweet x"
+            helpText =  "[Post image]\t     = Prepare an image for a Tweet \n" \
+                        "[Post script]\t    = Add a new script to the collection \n" \
+                        "[Post link]\t      = Prepare source link for a Tweet \n" \
+                        "[€...]\t           = Prepare text for a Tweet \n" \
+                        "[$c]\t             = Check your Youtube playlist \n" \
+                        "[$u]\t             = Update your Youtube playlist \n" \
+                        "[$s]\t             = Get how many prepared Tweets remaining \n" \
+                        "[$r]\t             = Reboot \n" \
+                        "[$inject(...)]\t   = Edit autostart scripts \n" \
+                        "[$g(x)]\t          = Get description of local Tweet x \n" \
+                        "[$d(x)]\t          = Delete local Tweet x"
             await message.channel.send(helpText)
 
         else:
@@ -134,5 +172,8 @@ class Bot(discord.Client):
             self.gotSource = False
             self.gotText = False
 
+
 b = Bot()
 b.run(TOKEN)
+
+# ID: 1005092786837663846
