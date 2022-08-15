@@ -20,7 +20,6 @@ class Bot(discord.Client):
         print(f'{self.user} has connected to Discord!')
 
     async def on_message(self, message):
-        print(message.reference.jump_url)
         if message.author == self.user:
             return
 
