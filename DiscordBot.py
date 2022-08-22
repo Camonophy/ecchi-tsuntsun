@@ -1,6 +1,8 @@
 import os
 import discord
+from WebHandler import getYandere
 from YoutubeManager import update, check
+from Follower import handleFollowerList, follow
 
 os.system("mkdir Source")
 TOKEN = os.getenv("BOT_TOKEN")
@@ -14,6 +16,7 @@ class Bot(discord.Client):
         self.gotText = False
         self.img = 0
         self.gotImage = False
+        os.system("rm run hold")
         super().__init__()
 
     async def on_ready(self):
@@ -42,9 +45,27 @@ class Bot(discord.Client):
 
         # Get source
         elif message.content.startswith("http"):
-            self.source = message.content
-            self.gotSource = True
-            await message.channel.send("Got the source!")
+            if "yande.re" in message.content:
+                self.text, self.img = getYandere(message.content)
+
+                if not self.text:
+                    self.gotText = False
+                    await message.channel.send("Could not retrieve any character!")
+                else:
+                    self.gotText = True
+
+                if not self.img:
+                    self.gotImage = False
+                    await message.channel.send("Could not retrieve any image!")
+                else:
+                    self.gotImage = True
+
+                self.source = message.content
+                self.gotSource = True
+            else:
+                self.source = message.content
+                self.gotSource = True
+                await message.channel.send("Got the source!")
 
         # Get text
         elif message.content.startswith("€"):
@@ -75,10 +96,34 @@ class Bot(discord.Client):
                 await message.channel.send("Everything is up-to-date!")
 
         # Update Youtube playlist
-        elif message.content.startswith("$u"):
+        elif message.content.startswith("$uy"):
             await message.channel.send("Updating your local playlist...")
             update()
             await message.channel.send("Updated your Youtube-Playlist!")
+
+        # Update Follower text file
+        elif message.content.startswith("$uf"):
+            await message.channel.send("Updating your local follower list...")
+            handleFollowerList()
+            await message.channel.send("Updated your follower list!")
+
+	# Start follow process
+        elif message.content.startswith("$sf"):
+            if os.path.exists("run"):
+                await message.channel.send("I'm already following new users!")
+            else:
+                await message.channel.send("I'll start following new users now!")
+                os.system("touch run")
+                t = threading.Thread(target=follow)
+                t.start()
+
+	# Hold follow process
+        elif message.content.startswith("$hf"):
+            if os.path.exists("run"):
+                await message.channel.send("I'll stop following new users!")
+                os.system("touch hold")
+            else:
+                await message.channel.send("I'm not following new users atm!")
 
         # Check how many Tweets are remaining and what scripts are available
         elif message.content.startswith("$s"):
@@ -133,6 +178,7 @@ class Bot(discord.Client):
         # Reboot to take changes into effect
         elif message.content.startswith("$r"):
             await message.channel.send("See you soon...hopefully!!")
+            os.system("rm run hold")
             os.system("sudo reboot")
 
         # Get the next Follower
@@ -148,10 +194,13 @@ class Bot(discord.Client):
                         "[Post link]\t      = Prepare source link for a Tweet \n" \
                         "[€...]\t           = Prepare text for a Tweet \n" \
                         "[$c]\t             = Check your Youtube playlist \n" \
-                        "[$u]\t             = Update your Youtube playlist \n" \
-                        "[$s]\t             = Get how many prepared Tweets remaining \n" \
+                        "[$uy]\t            = Update your Youtube playlist \n" \
+                        "[$st]\t            = Get how many prepared Tweets remaining \n" \
                         "[$r]\t             = Reboot \n" \
-                        "[$f]\t             = Get the next user to follow \n" \
+                        "[$f]\t             = Get the next user to follow and how many remain \n" \
+                        "[$uf]\t            = Update the follower list \n" \
+                        "[$sf]\t            = Start follow process \n" \
+                        "[$hf]\t            = Hold follow process \n" \
                         "[$inject(...)]\t   = Edit autostart scripts \n" \
                         "[$g(x)]\t          = Get description of local Tweet x \n" \
                         "[$d(x)]\t          = Delete local Tweet x"

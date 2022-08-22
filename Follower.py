@@ -31,7 +31,8 @@ def follow():
     with open("Follower.txt", 'r') as file:
         usernames = file.read().split("\n")
 
-        while usernames:
+    while usernames:
+        if os.path.exists("run") and not os.path.exists("hold"):    # Try to follow a new person
             with open("Follower.txt", 'w') as file:
                 user = usernames.pop(0)
                 wait = random.randint(300, 900)
@@ -43,66 +44,41 @@ def follow():
                     wait = 100
 
                 file.write("\n".join(usernames))
-                time.sleep(wait)
+        elif os.path.exists("hold"):                                # Stop the process entirely
+            break
 
-    def createList():
-        index = 1
-        follower = []
+        time.sleep(wait)
+    os.system("rm run hold")
 
-        while 1:
-            os.system("wget https://www.letsallfollowback.com/?p={} -O html.txt".format(index))
-            html = ""
+def handleFollowerList():
+    index = 1
+    follower = []
 
-            with open("html.txt", 'r') as file:
-                html = file.read().split("\n")
+    # Get current potential follower from the website
+    while 1:
+        os.system("wget https://www.letsallfollowback.com/?p={} -O html.txt".format(index))
+        html = ""
 
-            potentialFollower = []
+        with open("html.txt", 'r') as file:
+            html = file.read().split("\n")
 
-            for line in html:
-                if "BLANK" in line and "retweet" not in line:
-                    potentialFollower.append(line.split(">")[1].split("<")[0])
+        potentialFollower = []
 
-            potentialFollower.remove("--")
+        for line in html:
+            if "BLANK" in line and "retweet" not in line:
+                potentialFollower.append(line.split(">")[1].split("<")[0])
 
-            if len(potentialFollower) < 10:
-                break
-            else:
-                index += 1
-                follower += potentialFollower
+        potentialFollower.remove("--")
 
-        os.system("touch Follower.txt")
-        with open("Follower.txt", 'w') as file:
-            for f in follower:
-                file.write(f + "\n")
-        os.system("cp Follower.txt FollowerVanilla.txt")
+        if len(potentialFollower) < 10:
+            break
+        else:
+            index += 1
+            follower += potentialFollower
 
-    def updateList():
-        index = 1
+    if os.path.exists("Follower.txt"):          # There is a follower list
         updatedContent = ""
-        follower = []
         prevPotentialFollower = []
-
-        # Get current potential follower from the website
-        while 1:
-            os.system("wget https://www.letsallfollowback.com/?p={} -O html.txt".format(index))
-            html = ""
-
-            with open("html.txt", 'r') as file:
-                html = file.read().split("\n")
-
-            potentialFollower = []
-
-            for line in html:
-                if "BLANK" in line and "retweet" not in line:
-                    potentialFollower.append(line.split(">")[1].split("<")[0])
-
-            potentialFollower.remove("--")
-
-            if len(potentialFollower) < 10:
-                break
-            else:
-                index += 1
-                follower += potentialFollower
 
         # Load the previous potential follower list
         try:
@@ -111,12 +87,8 @@ def follow():
         except:
             pass
 
-        print(len(prevPotentialFollower))
-        print(len(follower))
-
         # Romove any duplicate
         follower = filter(lambda i: i not in prevPotentialFollower, follower)
-        print(list(follower))
 
         try:
             with open("Follower.txt", "r") as file:
@@ -131,26 +103,9 @@ def follow():
             file.write(updatedContent)
         os.system("cp Follower.txt FollowerVanilla.txt")
 
-'''
-# Get credentials
-twitterData = getJSONFile("TwitterKeys.json")
-auth = tweepy.OAuthHandler(twitterData["CONSUMER_KEY"], twitterData["CONSUMER_SECRET"])
-auth.set_access_token(twitterData["ACCESS_TOKEN"], twitterData["ACCESS_TOKEN_SECRET"])
-api = tweepy.API(auth)
-
-u = str(api.get_followers()[0]).split("_json=")[1].split(", protected")[0]
-u = u.replace('\'', "\"")
-#k = json.loads(u)
-print(u)
-
-c = input("c ; f ; u")
-
-if c == "c":
-    createList()
-elif c == "f":
-    follow()
-else:
-    unfollow() 
-'''
-
-follow()
+    else:                                   # There is no follower list
+        os.system("touch Follower.txt")
+        with open("Follower.txt", 'w') as file:
+            for f in follower:
+                file.write(f + "\n")
+        os.system("cp Follower.txt FollowerVanilla.txt")
