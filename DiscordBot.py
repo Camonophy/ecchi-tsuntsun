@@ -1,5 +1,6 @@
 import os
 import discord
+import threading
 from WebHandler import getYandere
 from YoutubeManager import update, check
 from Follower import handleFollowerList, follow
@@ -17,6 +18,9 @@ class Bot(discord.Client):
         self.img = 0
         self.gotImage = False
         os.system("rm run hold")
+        os.system("touch run")
+        t = threading.Thread(target=follow)
+        t.start()
         super().__init__()
 
     async def on_ready(self):
@@ -58,6 +62,7 @@ class Bot(discord.Client):
                     self.gotImage = False
                     await message.channel.send("Could not retrieve any image!")
                 else:
+                    os.system("wget {} -O Img.jpg".format(self.img))
                     self.gotImage = True
 
                 self.source = message.content
@@ -164,6 +169,14 @@ class Bot(discord.Client):
             except:
                 await message.channel.send("Local Tweet number {} was not found!".format(deleteNum))
 
+        # Get the next Follower and amount of remaining users from the Follower.txt file
+        elif message.content.startswith("$f"):
+            with open("Follower.txt", 'r') as file:
+                fol = file.readline()
+                num = len(file.readlines())
+                await message.channel.send("The next follower is {}".format(fol))
+                await message.channel.send("{} user to follower remaining".format(num))
+
         # Edit autostart scripts
         elif message.content.startswith("$inject"):
             scripts = str(message.content).split(" ")[1:]
@@ -180,12 +193,6 @@ class Bot(discord.Client):
             await message.channel.send("See you soon...hopefully!!")
             os.system("rm run hold")
             os.system("sudo reboot")
-
-        # Get the next Follower
-        elif message.content.startswith("$f"):
-            with open("Follower.txt", 'r') as file:
-                fol = file.readline()
-                await message.channel.send("The next follower is {}".format(fol))
 
         # Get help response
         elif message.content.startswith("$h"):
